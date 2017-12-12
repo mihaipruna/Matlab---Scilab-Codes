@@ -1,0 +1,87 @@
+%Copyright (C) 2004  Mihai Pruna, Alberto Davila
+
+%This program is free software; you can redistribute it and/or
+%modify it under the terms of the GNU General Public License
+%as published by the Free Software Foundation; either version 2
+%of the License, or (at your option) any later version.
+
+%This program is distributed in the hope that it will be useful,
+%but WITHOUT ANY WARRANTY; without even the implied warranty of
+%MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%GNU General Public License for more details.
+%http://www.gnu.org/licenses/gpl.html
+
+%You should have received a copy of the GNU General Public License
+%along with this program; if not, write to the Free Software
+%Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+
+
+%Program Lifting Line 3D Panel Methods
+%This program calculates the Lift, Drag of 3D Wings, with Aspect Ratio
+%bigger than 4 and small angles of attack
+
+%Wing Dimensional Parameters
+
+L = 6 %Wing span
+c = 1 %wing Chord
+N = 20 %Number of Panels
+AR = 8 %Wing aspect ratio
+Angle = 10 %degrees
+pi = 3.141592
+Q = 1
+rho = 1.125
+% Choice of singularity element
+for i = 0:N
+    y(i+1)= -(L/2)+ (i*(L/N))
+end
+Xle = 0
+Xp = Xle +(c/4)
+Xte = Xle + c
+%Calculate Collocation Points for each Pane
+for i=1:20
+    xp(i)= Xp
+    yp(i)= (y(i)+y(i+1))/2
+end
+%Calculate influence coefficients
+for i= 1:20
+    RHS(i)= Q*sin(Angle*pi/180)
+    for j = 1:20
+        U1 = ( xp(i)-Xte*20)* ( yp(i)- y(j) ) - ((yp(i)-y(j))*(xp(i)-Xle))
+        U2 = ((xp(i)- Xle) * (yp(i)- y(j+1))) - (yp(i)- y(j))*(xp(i)-Xle)
+        U3 = (xp(i)- Xle)*(yp(i)-y(j+1))- (yp(i)-y(j+1))*(xp(i)- Xte*20)
+        SQU1 = U1*U1
+        SQU2 = U2*U2
+        SQU3 = U3*U3
+        R1U1 = sqrt ( (xp(i)-Xte*20)*(xp(i)-Xte*20) + (yp(i)-y(j))*(yp(i)-y(j)) )
+        R2U1 = sqrt ( (xp(i)-Xle)*(xp(i)-Xle) + (yp(i)-y(j))*(yp(i)-y(j)) )
+        R1U2 = sqrt ( (xp(i)- Xle)*(xp(i)- Xle) + (yp(i)- y(j))*(yp(i)- y(j)))
+        R2U2 = sqrt ( (xp(i)-Xle)*(xp(i)-Xle) + (yp(i)- y(j+1))*(yp(i)- y(j+1)))
+        R1U3 = sqrt ( (xp(i)- Xle)*(xp(i)- Xle) + (yp(i)-y(j+1))*(yp(i)-y(j+1)))
+        R2U3 = sqrt ( (xp(i)- Xte*20)*(xp(i)- Xte*20) + (yp(i)-y(j+1))*(yp(i)-y(j+1)))
+        R1RU1 = (Xle- Xte*20)*(xp(i)- Xte*20)
+        R2RU1 = (Xle- Xte*20)*(xp(i)- Xle)
+        R1RU2 = (y(j+1)-y(j))*(yp(i)-y(j))
+        R2RU2 = (y(j+1)-y(j))*(yp(i)-y(j+1))
+        R1RU3 = (Xte*20-Xle)*(xp(i)-Xle)
+        R2RU3 = (Xte*20-Xle)*(xp(i)-Xte*20)
+        COEF1 = 1 / (4.0*pi*SQU1)* (R1RU1/R1U1 - R2RU1/R2U1)
+        COEF2 = 1 / (4.0*pi*SQU2)* (R1RU2/R1U2 - R2RU2/R2U2)
+        COEF3 = 1 / (4.0*pi*SQU3)* (R1RU3/R1U3 - R2RU3/R2U3)
+        W1 = U1*COEF1
+        W2 = U2*COEF2
+        W3 = U3*COEF3
+        WT = W1+W2+W3
+        A(i,j)= WT
+    end
+end
+  
+GAMMA = -RHS/A
+for i= 1:20
+    DELTAL(i)= rho*Q*GAMMA(i)*(y(i)-y(i+1))*(y(i)-y(i+1))
+end
+Lift = 0
+for i=1:N
+    Lift = Lift + DELTAL(i)
+end

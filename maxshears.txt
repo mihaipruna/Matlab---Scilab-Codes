@@ -1,0 +1,158 @@
+//Copyright (C) 2007  Mihai Pruna
+
+//This program is free software; you can redistribute it and/or
+//modify it under the terms of the GNU General Public License
+//as published by the Free Software Foundation; either version 2
+//of the License, or (at your option) any later version.
+
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//http://www.gnu.org/licenses/gpl.html
+
+//You should have received a copy of the GNU General Public License
+//along with this program; if not, write to the Free Software
+//Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+//This program will calculate the maximum shear stress on a cross section of a beam from a vertical shear force.  
+//Limitations: it is assumed that all the elements of the ebam are made up from the same material and that the thinnest section of the beam is at the neutral axis.
+//All rectangles should be inputted as solids (value '1')
+//The theory behind this solution can be found in many books or articles. 
+rectangles=evstr(input("Number of rectangular components of cross sectional area?"));
+x=zeros(10);
+y=zeros(10);
+b=zeros(10);
+h=zeros(10);
+ycg=zeros(10);
+xcg=zeros(10);
+area=zeros(10);
+Ax=zeros(10);
+Ay=zeros(10);
+Ax2=zeros(10);
+Ay2=zeros(10);
+I0x=zeros(10);
+I0y=zeros(10);
+sectionxcg=0;
+sectionycg=0;
+sumarea=0;
+sumay=0;
+sumay2=0;
+sumax=0;
+sumax2=0;
+sumI0x=0;
+sumI0y=0;
+sectionIx=0;
+sectionIy=0;
+sumaxy=0;
+hole=zeros(10);
+for i=1:rectangles
+printf("for rectangle %d \n",i);
+x(i)=evstr(input("Input x base coordinate of rectangle"));
+y(i)=evstr(input("Input y base coordinate of rectangle"));
+b(i)=evstr(input("Input length base of rectangle"));
+h(i)=evstr(input("Input height of rectangle"));
+hole(i)=evstr(input("Solid or hole (1 or 0)"));
+if hole(i)==0
+hole(i)=-1;
+end
+
+ycg(i)=y(i)+h(i)/2;
+xcg(i)=x(i)+b(i)/2;
+area(i)=hole(i)*b(i)*h(i);
+Ax(i)=area(i)*xcg(i);
+Ay(i)=area(i)*ycg(i);
+Ax2(i)=Ax(i)*xcg(i);
+Ay2(i)=Ay(i)*ycg(i);
+I0x(i)=hole(i)*b(i)*(h(i)^3)/12;
+I0y(i)=hole(i)*h(i)*(b(i)^3)/12;
+sumarea=sumarea+area(i);
+sumax=sumax+Ax(i);
+sumay=sumay+Ay(i);
+sumax2=sumax2+Ax2(i);
+sumay2=sumay2+Ay2(i);
+sumI0x=sumI0x+I0x(i);
+sumI0y=sumI0y+I0y(i);
+sumaxy=sumaxy+area(i)*xcg(i)*ycg(i);
+end
+//displaying the elements needed to calculate the moments of inertia
+for i=1:rectangles
+printf("Element %d ",i);
+printf(" base=%f",b(i));
+printf(" height=%f",h(i));
+printf(" x centroid=%f",xcg(i));
+printf(" y centroid=%f",ycg(i));
+printf(" area=%f",area(i));
+printf(" Ax=%f",Ax(i));
+printf(" Ay=%f",Ay(i));
+printf(" Ax2=%f",Ax2(i));
+printf(" Ay2=%f",Ay2(i));
+printf(" I0x=%f",I0x(i));
+printf(" I0y=%f",I0y(i));
+printf("\n");
+end
+//adding them together to calculate the moments of inertia
+sectionxcg=sumax/sumarea;
+sectionycg=sumay/sumarea;
+sectionIx=sumI0x+sumay2-sectionycg*sumay;
+sectionIy=sumI0y+sumax2-sectionxcg*sumax;
+Ixy=sumaxy-sumarea*sectionxcg*sectionycg;
+printf("Section x centroid=%f\n",sectionxcg);
+printf("Section y centroid=%f\n",sectionycg);
+printf("Section x moment of inertia around cg(Ix)=%f\n",sectionIx);
+printf("Section y moment of inertia around cg(Iy)=%f\n",sectionIy);
+printf("Section Ixy=%f\n",Ixy);
+//the code below has been added to the moments of inertia program in order to compute the shear stress. First the moment of area Q (arbitrarily above the neutral axis)
+//will be calculated.The elements making up Q will be generated and their Y centroids measured from the neutral axis. The neutral axis is located at the Y of the centroid of the 
+//total section
+Qrectangles=0;
+QbaseY=zeros(rectangles);
+QbaseX=zeros(rectangles);
+Qlength=zeros(rectangles);
+Qheight=zeros(rectangles);
+QcentroidY=zeros(rectangles);
+Qarea=zeros(rectangles);
+NAsectionThickness=0;
+
+//generating the elements of the cross section cut at the neutral axis
+
+for j=1:rectangles
+j
+
+if y(j)>=sectionycg then
+Qrectangles=Qrectangles+1;
+QbaseY(Qrectangles)=y(j);
+QbaseX(Qrectangles)=x(j);
+Qlength(Qrectangles)=b(j);
+Qheight(Qrectangles)=h(j);
+QcentroidY(Qrectangles)=QbaseY(Qrectangles)+Qheight(Qrectangles)/2-sectionycg;
+Qarea(Qrectangles)=Qlength(Qrectangles)*Qheight(Qrectangles);
+
+elseif (y(j)+h(j)>sectionycg) then
+
+Qrectangles=Qrectangles+1;
+QbaseY(Qrectangles)=sectionycg;
+QbaseX(Qrectangles)=x(j);
+Qlength(Qrectangles)=b(j);
+Qheight(Qrectangles)=y(j)+h(j)-sectionycg;
+QcentroidY(Qrectangles)=QbaseY(Qrectangles)+Qheight(Qrectangles)/2-sectionycg;
+Qarea(Qrectangles)=Qlength(Qrectangles)*Qheight(Qrectangles);
+NAsectionThickness=NAsectionThickness+Qlength(Qrectangles);
+end
+
+end
+//computing Q itself
+Q=0;
+for k=1:Qrectangles
+printf("Element %d above Neutral Axis has an area of %f and a Centroid y distance above the NA of %f\n",k,Qarea(k),QcentroidY(k));
+Q=Q+Qarea(k)*(QcentroidY(k));
+end
+printf ("Q is %f\n",Q);
+V=0;
+V=evstr(input("Input Maximum Shear Force"));
+maxShearStress=V*Q/(sectionIx*NAsectionThickness);
+printf("\n");
+printf("Maximum Shear Stress (at NA) is %f\n",maxShearStress);
+
+
+

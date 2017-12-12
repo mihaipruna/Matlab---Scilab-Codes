@@ -1,0 +1,66 @@
+%A MATLAB program was written to solve the heat equation in differential form: ut=2uxx
+%On a grid with indices i for the x axis and n for the time axis, using forward marching, the above equation can be written as follows
+%u(i,n+1)=u(i,n)+2*deltat/deltax2*(u(i+2,n)-2*u(i+1,n)+u(i,n))
+%In this format, it can be solved by a simple code with two embedded ‘FOR’ cycles, the outer cycle traversing the time axis, while the inner cycle goes over the x axis.
+%The resulting matrix of values of u is plotted with respect to the x and time axes, and compared against the exact solution of the heat equation:
+%u(x,t)=100*e-2p^2*tsin(px)
+%Case 1: Number of grid points=9, delta t=0.25
+%Case 2: Number of grid points=9, delta t=0.50
+%Case 3: Number of grid points=19, delta t=0.50
+
+
+deltat=0.00001
+deltax=0.05
+L=5
+t=1
+gridi=L./deltax+1;
+gridn=t./deltat+1;
+uvals=zeros(gridn,gridi+1);
+plotx=zeros(gridn,gridi+1);
+ploty=zeros(gridn,gridi+1);
+x=zeros(gridn,gridi+1);
+time=zeros(gridn,gridi+1);
+funcval=zeros(gridn,gridi+1);
+i=2
+
+while i<gridi
+    uvals(1,i)=100.*sin(3.1416*deltax.*(i-1)/L);
+    i=i+1
+
+end 
+
+for n=2:gridn
+    n
+    for i=2:gridi-1
+     uvals(n,i)=uvals(n-1,i)+2*deltat./deltax.^2*(uvals(n-1,i+2)-2*uvals(n-1,i+1)+uvals(n-1,i));
+    i
+
+    end
+
+end
+
+for n=1:gridn
+for i=1:gridi
+    plotx(n,i)=i;
+x(n,i)=(i-1)*deltax;
+end
+end
+for i=1:gridi
+    for n=1:gridn
+    ploty(n,i)=n;
+    time(n,i)=(n-1)*deltat;
+end
+end
+for i=1:gridi
+    for n=1:gridn
+   funcval(n,i)=100*exp(-3.1416^2*2*time(n,i))*sin(3.1416*x(n,i)/L);
+    end
+end
+%plotx
+%ploty;
+%uvals;
+figure(1)
+plot3(plotx,ploty,uvals,'.')
+
+figure(2)
+plot3(x,time,funcval)

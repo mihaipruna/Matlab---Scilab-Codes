@@ -1,0 +1,158 @@
+//Copyright (C) 2006  Mihai Pruna
+
+//This program is free software; you can redistribute it and/or
+//modify it under the terms of the GNU General Public License
+//as published by the Free Software Foundation; either version 2
+//of the License, or (at your option) any later version.
+
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//http://www.gnu.org/licenses/gpl.html
+
+//You should have received a copy of the GNU General Public License
+//along with this program; if not, write to the Free Software
+//Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+//This program will calculate the shear forces distributed to a fastener pattern by 
+//a load in the same plan as the fasteners, but whose location can be different from the location of the centroid of the fastener pattern.
+//The theory behind this solution can be found in many books or articles. 
+//Visit http://solvengineer.com/blog/2006/12/a_programming_tutorial_and_a_peek_inside_the_programmers_mind.html for details
+
+fasteners=evstr(input("Number of fasteners?"));
+
+x=zeros(10);
+
+y=zeros(10);
+
+diam=zeros(10);
+
+ShearU=zeros(10);
+
+area=zeros(10);
+
+DiamSq=zeros(10);
+
+DiamSqX=zeros(10);
+
+DiamSqY=zeros(10);
+
+rSquare=zeros(10);
+
+SumShearUrSquare=0;
+
+ShearUr=zeros(10);
+
+ShearUr2=zeros(10);
+
+ShearX=zeros(10);
+
+ShearY=zeros(10);
+
+ShearMomentX=zeros(10);
+
+ShearMomentY=zeros(10);
+
+SumDiamSq=0;
+
+SumDiamSqX=0;
+
+SumDiamSqY=0;
+
+Xcentroid=0;
+
+Ycentroid=0;
+
+SumSU=0;
+
+Mreaction=0;
+
+Preaction=0;
+
+Vreacgtion=0;
+
+AppliedMoment=0;
+
+P=evstr(input("Axial Force Component?"));
+
+V=evstr(input("Shear Force Component?"));
+
+forcex=evstr(input("X location of force?"));
+
+forcey=evstr(input("Y location of force?"));
+
+AppliedMoment=evstr(input("Applied Moment? (Right Hand Rule sign convention going in is positive)"));
+
+for i=1:fasteners
+
+printf("for fastener %d \n",i);
+
+x(i)=evstr(input("Input x coordinate of fastener center"));
+
+y(i)=evstr(input("Input y coordinate of fastener center"));
+
+diam(i)=evstr(input("Input diameter of fastener"));
+
+ShearU(i)=evstr(input("Input Ultimate Shear Strength of fastener"));
+
+DiamSq(i)=diam(i)^2;
+
+DiamSqX(i)=DiamSq(i)*x(i);
+
+DiamSqY(i)=DiamSq(i)*y(i);
+
+SumDiamSq=SumDiamSq+DiamSq(i);
+
+SumDiamSqX=SumDiamSqX+DiamSqX(i);
+
+SumDiamSqY=SumDiamSqY+DiamSqY(i);
+
+SumSU=SumSU+ShearU(i);
+
+end
+
+Xcentroid=SumDiamSqX/SumDiamSq;
+
+Ycentroid=SumDiamSqY/SumDiamSq;
+
+for i=1:fasteners
+
+rSquare(i)=(x(i)-Xcentroid)^2+(y(i)-Ycentroid)^2;
+
+SumShearUrSquare=SumShearUrSquare+rSquare(i)*ShearU(i);
+
+end
+
+Mreaction=-P*(forcey-Ycentroid)+V*(forcex-Xcentroid)-AppliedMoment;
+
+Preaction=-P;
+
+Vreaction=-V;
+
+for i=1:fasteners
+
+ShearX(i)=-Preaction*ShearU(i)/SumSU;
+
+ShearY(i)=-Vreaction*ShearU(i)/SumSU;
+
+ShearMomentX(i)=-Mreaction*ShearU(i)*(y(i)-Ycentroid)/SumShearUrSquare;
+
+ShearMomentY(i)=Mreaction*ShearU(i)*(x(i)-Xcentroid)/SumShearUrSquare;
+
+printf("Fastener %d incurs an axial force (horizontal load component) of %f\n",i,ShearX(i)); 
+
+ShearX(i)=ShearX(i)+ShearMomentX(i);
+
+printf("Fastener %d incurs a shear force (vertical load component) of %f\n",i,ShearY(i));
+
+ShearY(i)=ShearY(i)+ShearMomentY(i);
+
+printf("Fastener %d incurs a horizontal load from the centroid moment of %f and a vertical load from the centroid moment of %f\n",i,ShearMomentX(i),ShearMomentY(i));
+
+printf('Fastener %d incurs a horizontal shear force of %f and a vertical shear force of %f\n',i,ShearX(i),ShearY(i));
+
+end
+
+
+
